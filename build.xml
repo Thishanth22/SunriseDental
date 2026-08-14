@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="SunriseDental" default="default" basedir=".">
+    <description>Builds, tests, and packages Sunrise Dental Clinic Management System.</description>
+    <property file="nbproject/project.properties"/>
+
+    <target name="default" depends="dist"/>
+
+    <target name="init">
+        <mkdir dir="${build.classes.dir}"/>
+        <mkdir dir="${dist.dir}"/>
+    </target>
+
+    <target name="compile" depends="init" description="Compile Java source files">
+        <javac srcdir="${src.dir}" destdir="${build.classes.dir}" includeantruntime="false"
+               encoding="${source.encoding}" debug="${javac.debug}" source="${javac.source}" target="${javac.target}">
+            <classpath path="${javac.classpath}"/>
+        </javac>
+        <copy todir="${build.classes.dir}">
+            <fileset dir="${src.dir}" excludes="**/*.java"/>
+        </copy>
+        <!-- Sync classes into WebContent/WEB-INF/classes for live deployment -->
+        <mkdir dir="WebContent/WEB-INF/classes"/>
+        <copy todir="WebContent/WEB-INF/classes">
+            <fileset dir="${build.classes.dir}"/>
+        </copy>
+    </target>
+
+    <target name="dist" depends="compile" description="Package WAR distribution">
+        <mkdir dir="${dist.dir}"/>
+        <war destfile="${dist.war}" webxml="${webinf.dir}/web.xml">
+            <fileset dir="${web.docbase.dir}" excludes="WEB-INF/web.xml"/>
+            <classes dir="${build.classes.dir}"/>
+        </war>
+    </target>
+
+    <target name="clean" description="Clean build artifacts">
+        <delete dir="${build.dir}"/>
+        <delete dir="${dist.dir}"/>
+    </target>
+
+    <target name="clean-build" depends="clean,dist" description="Clean and Build WAR"/>
+
+    <target name="run" depends="compile" description="Run project on local server">
+        <echo message="Sunrise Dental is running at http://localhost:8080/SunriseDental/"/>
+    </target>
+
+    <target name="compile-test" depends="compile" description="Compile JUnit tests">
+        <mkdir dir="build/test/classes"/>
+        <javac srcdir="test" destdir="build/test/classes" includeantruntime="false"
+               encoding="${source.encoding}" debug="true" source="21" target="21">
+            <classpath>
+                <path path="${javac.classpath}"/>
+                <pathelement location="${build.classes.dir}"/>
+                <fileset dir="lib/test" includes="*.jar"/>
+            </classpath>
+        </javac>
+    </target>
+
+    <target name="test" depends="compile-test" description="Execute automated JUnit test suite">
+        <java classname="com.sunrise.dental.SunriseDentalTestSuite" fork="true" failonerror="true">
+            <classpath>
+                <path path="${javac.classpath}"/>
+                <pathelement location="${build.classes.dir}"/>
+                <pathelement location="build/test/classes"/>
+                <fileset dir="lib/test" includes="*.jar"/>
+            </classpath>
+        </java>
+    </target>
+
+    <target name="javadoc" description="Generate Javadoc"/>
+</project>
