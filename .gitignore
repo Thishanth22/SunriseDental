@@ -1,0 +1,11 @@
+# Build and distribution directories
+build/
+dist/
+target/
+WebContent/WEB-INF/classes/
+*.class
+
+# Logs and temporary files
+*.log
+*.tmp
+*.bak
