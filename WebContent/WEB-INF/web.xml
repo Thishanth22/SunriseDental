@@ -1,0 +1,274 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns="https://jakarta.ee/xml/ns/jakartaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee
+                             https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd"
+         version="6.0">
+
+    <display-name>Sunrise Dental Clinic Management System</display-name>
+
+    <!-- ================================================
+         Context Parameters — Database Configuration
+         Change these to match your WAMP installation.
+         ================================================ -->
+    <context-param>
+        <param-name>db.host</param-name>
+        <param-value>localhost</param-value>
+    </context-param>
+    <context-param>
+        <param-name>db.port</param-name>
+        <param-value>3306</param-value>
+    </context-param>
+    <context-param>
+        <param-name>db.name</param-name>
+        <param-value>sunrise_dental_db</param-value>
+    </context-param>
+    <context-param>
+        <param-name>db.user</param-name>
+        <param-value>root</param-value>
+    </context-param>
+    <context-param>
+        <param-name>db.password</param-name>
+        <param-value></param-value>
+    </context-param>
+    <context-param>
+        <param-name>jakarta.servlet.jsp.jstl.fmt.locale</param-name>
+        <param-value>en_US</param-value>
+    </context-param>
+    <context-param>
+        <param-name>javax.servlet.jsp.jstl.fmt.locale</param-name>
+        <param-value>en_US</param-value>
+    </context-param>
+
+    <!-- ================================================
+         Application Initializer Listener
+         Initialises DB connection on startup
+         ================================================ -->
+    <listener>
+        <listener-class>com.sunrise.dental.controller.AppInitializer</listener-class>
+    </listener>
+
+    <!-- ================================================
+         Session Configuration — 30 minute timeout
+         ================================================ -->
+    <session-config>
+        <session-timeout>30</session-timeout>
+        <cookie-config>
+            <http-only>true</http-only>
+            <!-- Set to true when using HTTPS in production -->
+            <secure>false</secure>
+        </cookie-config>
+        <tracking-mode>COOKIE</tracking-mode>
+    </session-config>
+
+    <!-- ================================================
+         Filters — Applied in declaration order
+         ================================================ -->
+
+    <!-- 1. Authentication Filter — all requests -->
+    <filter>
+        <filter-name>AuthenticationFilter</filter-name>
+        <filter-class>com.sunrise.dental.filter.AuthenticationFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>AuthenticationFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
+    <!-- 2. Authorization Filter — role-based access -->
+    <filter>
+        <filter-name>AuthorizationFilter</filter-name>
+        <filter-class>com.sunrise.dental.filter.AuthorizationFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>AuthorizationFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
+    <!-- ================================================
+         Servlets
+         ================================================ -->
+
+    <!-- Login / Logout -->
+    <servlet>
+        <servlet-name>LoginServlet</servlet-name>
+        <servlet-class>com.sunrise.dental.controller.LoginServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>LoginServlet</servlet-name>
+        <url-pattern>/LoginServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>LogoutServlet</servlet-name>
+        <servlet-class>com.sunrise.dental.controller.LogoutServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>LogoutServlet</servlet-name>
+        <url-pattern>/LogoutServlet</url-pattern>
+    </servlet-mapping>
+
+    <!-- Dashboard -->
+    <servlet>
+        <servlet-name>DashboardServlet</servlet-name>
+        <servlet-class>com.sunrise.dental.controller.DashboardServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>DashboardServlet</servlet-name>
+        <url-pattern>/dashboard</url-pattern>
+    </servlet-mapping>
+
+    <!-- Patients -->
+    <servlet>
+        <servlet-name>PatientServlet</servlet-name>
+        <servlet-class>com.sunrise.dental.controller.PatientServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>PatientServlet</servlet-name>
+        <url-pattern>/patients</url-pattern>
+    </servlet-mapping>
+
+    <!-- Dentists -->
+    <servlet>
+        <servlet-name>DentistServlet</servlet-name>
+        <servlet-class>com.sunrise.dental.controller.DentistServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>DentistServlet</servlet-name>
+        <url-pattern>/dentists</url-pattern>
+    </servlet-mapping>
+
+    <!-- Treatments -->
+    <servlet>
+        <servlet-name>TreatmentServlet</servlet-name>
+        <servlet-class>com.sunrise.dental.controller.TreatmentServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>TreatmentServlet</servlet-name>
+        <url-pattern>/treatments</url-pattern>
+    </servlet-mapping>
+
+    <!-- Appointments -->
+    <servlet>
+        <servlet-name>AppointmentServlet</servlet-name>
+        <servlet-class>com.sunrise.dental.controller.AppointmentServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>AppointmentServlet</servlet-name>
+        <url-pattern>/appointments</url-pattern>
+    </servlet-mapping>
+
+    <!-- Billing -->
+    <servlet>
+        <servlet-name>BillingServlet</servlet-name>
+        <servlet-class>com.sunrise.dental.controller.BillingServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>BillingServlet</servlet-name>
+        <url-pattern>/billing</url-pattern>
+    </servlet-mapping>
+
+    <!-- Payments -->
+    <servlet>
+        <servlet-name>PaymentServlet</servlet-name>
+        <servlet-class>com.sunrise.dental.controller.PaymentServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>PaymentServlet</servlet-name>
+        <url-pattern>/payments</url-pattern>
+    </servlet-mapping>
+
+    <!-- Reports -->
+    <servlet>
+        <servlet-name>ReportServlet</servlet-name>
+        <servlet-class>com.sunrise.dental.controller.ReportServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>ReportServlet</servlet-name>
+        <url-pattern>/reports</url-pattern>
+    </servlet-mapping>
+
+    <!-- Users -->
+    <servlet>
+        <servlet-name>UserServlet</servlet-name>
+        <servlet-class>com.sunrise.dental.controller.UserServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>UserServlet</servlet-name>
+        <url-pattern>/users</url-pattern>
+    </servlet-mapping>
+
+    <!-- Notifications -->
+    <servlet>
+        <servlet-name>NotificationServlet</servlet-name>
+        <servlet-class>com.sunrise.dental.controller.NotificationServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>NotificationServlet</servlet-name>
+        <url-pattern>/notifications</url-pattern>
+    </servlet-mapping>
+
+    <!-- Audit Logs -->
+    <servlet>
+        <servlet-name>AuditServlet</servlet-name>
+        <servlet-class>com.sunrise.dental.controller.AuditServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>AuditServlet</servlet-name>
+        <url-pattern>/audit</url-pattern>
+    </servlet-mapping>
+
+    <!-- Prescriptions -->
+    <servlet>
+        <servlet-name>PrescriptionServlet</servlet-name>
+        <servlet-class>com.sunrise.dental.controller.PrescriptionServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>PrescriptionServlet</servlet-name>
+        <url-pattern>/prescriptions</url-pattern>
+    </servlet-mapping>
+
+    <!-- Help & User Guide -->
+    <servlet>
+        <servlet-name>HelpServlet</servlet-name>
+        <servlet-class>com.sunrise.dental.controller.HelpServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>HelpServlet</servlet-name>
+        <url-pattern>/help</url-pattern>
+    </servlet-mapping>
+
+    <!-- Public Invoice QR Verification -->
+    <servlet>
+        <servlet-name>VerifyBillServlet</servlet-name>
+        <servlet-class>com.sunrise.dental.controller.VerifyBillServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>VerifyBillServlet</servlet-name>
+        <url-pattern>/verify-bill</url-pattern>
+    </servlet-mapping>
+
+    <!-- ================================================
+         Welcome Pages
+         ================================================ -->
+    <welcome-file-list>
+        <welcome-file>index.jsp</welcome-file>
+    </welcome-file-list>
+
+    <!-- ================================================
+         Custom Error Pages
+         ================================================ -->
+    <error-page>
+        <error-code>404</error-code>
+        <location>/errors/404.jsp</location>
+    </error-page>
+    <error-page>
+        <error-code>403</error-code>
+        <location>/errors/403.jsp</location>
+    </error-page>
+    <error-page>
+        <error-code>500</error-code>
+        <location>/errors/500.jsp</location>
+    </error-page>
+
+</web-app>
