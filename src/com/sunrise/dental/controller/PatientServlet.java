@@ -255,6 +255,8 @@ public class PatientServlet extends HttpServlet {
         p.setBloodGroup(sanitize(req.getParameter("bloodGroup")));
         p.setAllergies(sanitize(req.getParameter("allergies")));
         p.setMedicalNotes(sanitize(req.getParameter("medicalNotes")));
+        String status = sanitize(req.getParameter("status"));
+        p.setStatus(status != null && !status.isEmpty() ? status : "ACTIVE");
         return p;
     }
 

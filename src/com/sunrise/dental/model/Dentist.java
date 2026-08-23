@@ -121,6 +121,31 @@ public class Dentist {
     public LocalDateTime getUpdatedAt()               { return updatedAt; }
     public void          setUpdatedAt(LocalDateTime v){ this.updatedAt = v; }
 
+    public String getAvailableDaysSummary() {
+        java.util.List<String> days = new java.util.ArrayList<>();
+        if (availableMonday) days.add("Mon");
+        if (availableTuesday) days.add("Tue");
+        if (availableWednesday) days.add("Wed");
+        if (availableThursday) days.add("Thu");
+        if (availableFriday) days.add("Fri");
+        if (availableSaturday) days.add("Sat");
+        if (availableSunday) days.add("Sun");
+        return days.isEmpty() ? "None" : String.join(", ", days);
+    }
+
+    public boolean isAvailableOn(java.time.DayOfWeek day) {
+        if (day == null) return false;
+        return switch (day) {
+            case MONDAY    -> availableMonday;
+            case TUESDAY   -> availableTuesday;
+            case WEDNESDAY -> availableWednesday;
+            case THURSDAY  -> availableThursday;
+            case FRIDAY    -> availableFriday;
+            case SATURDAY  -> availableSaturday;
+            case SUNDAY    -> availableSunday;
+        };
+    }
+
     @Override
     public String toString() {
         return "Dentist{id=" + dentistId + ", name='" + getFullName()

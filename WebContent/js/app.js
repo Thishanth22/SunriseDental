@@ -124,20 +124,9 @@ function initConfirmDialogs() {
 // 7. APPOINTMENT FORM — AJAX AVAILABILITY CHECK
 // =========================================================
 function initAppointmentForm() {
-  // Auto-populate patient phone and address on patient selection
-  const patientSel = document.getElementById('patientId');
-  const phoneInput = document.getElementById('patientPhone');
-  const addrInput  = document.getElementById('patientAddress');
-  if (patientSel) {
-    patientSel.addEventListener('change', function () {
-      const opt = patientSel.options[patientSel.selectedIndex];
-      if (opt && opt.value) {
-        if (phoneInput) phoneInput.value = opt.getAttribute('data-phone') || '';
-        if (addrInput)  addrInput.value  = opt.getAttribute('data-address') || '';
-      }
-    });
-  }
-
+  const patientSel   = document.getElementById('patientId');
+  const phoneInput   = document.getElementById('patientPhone');
+  const addrInput    = document.getElementById('patientAddress');
   const dentistSel   = document.getElementById('dentistId');
   const dateSel      = document.getElementById('appointmentDate');
   const timeSel      = document.getElementById('appointmentTime');
@@ -145,17 +134,104 @@ function initAppointmentForm() {
   const availStatus  = document.getElementById('availabilityStatus');
   const submitBtn    = document.getElementById('apptSubmitBtn');
   const excludeIdEl  = document.getElementById('excludeId');
+  const schedBadge   = document.getElementById('dentistScheduleBadge');
+  const dateBadge    = document.getElementById('dateAvailabilityBadge');
+  const timeGuidance = document.getElementById('timeGuidance');
   const contextPath  = document.querySelector('meta[name="contextPath"]')?.content || '';
 
   if (!dentistSel || !dateSel || !timeSel) return;
 
+  function syncPatientFields() {
+    if (!patientSel) return;
+    const opt = patientSel.options[patientSel.selectedIndex];
+    if (opt && opt.value) {
+      if (phoneInput && !phoneInput.value) phoneInput.value = opt.getAttribute('data-phone') || '';
+      if (addrInput && !addrInput.value)   addrInput.value  = opt.getAttribute('data-address') || '';
+    }
+  }
+
+  // Initial sync on load (e.g. if patientId was pre-selected from URL)
+  syncPatientFields();
+  if (patientSel) {
+    patientSel.addEventListener('change', function () {
+      const opt = patientSel.options[patientSel.selectedIndex];
+      if (opt && opt.value) {
+        if (phoneInput) phoneInput.value = opt.getAttribute('data-phone') || '';
+        if (addrInput)  addrInput.value  = opt.getAttribute('data-address') || '';
+      }
+      checkAvailability();
+    });
+  }
+
+  const dayMap = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+  function updateDentistSchedule() {
+    const opt = dentistSel.options[dentistSel.selectedIndex];
+    if (!opt || !opt.value) {
+      if (schedBadge) schedBadge.textContent = '';
+      if (dateBadge)  dateBadge.textContent = '';
+      if (timeGuidance) timeGuidance.textContent = '';
+      timeSel.removeAttribute('min');
+      timeSel.removeAttribute('max');
+      return true;
+    }
+
+    const start = opt.getAttribute('data-start') || '';
+    const end   = opt.getAttribute('data-end') || '';
+    const days  = opt.getAttribute('data-days') || '';
+
+    if (schedBadge) {
+      schedBadge.innerHTML = '<i class="bi bi-clock-fill me-1 text-primary"></i>' +
+        'Shift: <strong>' + (start ? start.substring(0, 5) : 'N/A') + ' - ' + (end ? end.substring(0, 5) : 'N/A') + '</strong> ' +
+        '<span class="text-muted ms-2"><i class="bi bi-calendar-check me-1"></i>Days: ' + days + '</span>';
+    }
+
+    if (start) timeSel.min = start.substring(0, 5);
+    if (end)   timeSel.max = end.substring(0, 5);
+    if (timeGuidance && start && end) {
+      timeGuidance.textContent = 'Shift: ' + start.substring(0, 5) + ' to ' + end.substring(0, 5);
+    }
+
+    // Check date against dentist's day-of-week availability
+    if (dateSel.value) {
+      const parts = dateSel.value.split('-');
+      if (parts.length === 3) {
+        const dObj = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+        const dayIdx = dObj.getDay();
+        const attrKey = 'data-' + dayMap[dayIdx];
+        const isAvail = opt.getAttribute(attrKey) === 'true' || opt.getAttribute(attrKey) === '1';
+
+        if (!isAvail) {
+          if (dateBadge) {
+            dateBadge.innerHTML = '<span class="text-danger fw-semibold"><i class="bi bi-exclamation-triangle-fill me-1"></i>Not in clinic on ' +
+              dayNames[dayIdx] + 's. Available: ' + days + '</span>';
+          }
+          if (availStatus) {
+            availStatus.innerHTML = '<span class="text-danger"><i class="bi bi-x-circle-fill me-1"></i>Selected dentist is not in clinic on ' +
+              dayNames[dayIdx] + 's. Please choose another date (' + days + ').</span>';
+          }
+          if (submitBtn) submitBtn.disabled = true;
+          return false;
+        } else {
+          if (dateBadge) dateBadge.innerHTML = '<span class="text-success"><i class="bi bi-check-circle-fill me-1"></i>Dentist available on ' + dayNames[dayIdx] + 's</span>';
+        }
+      }
+    }
+    return true;
+  }
+
   let checkTimeout = null;
 
   function checkAvailability() {
+    const isDayValid = updateDentistSchedule();
+    if (!isDayValid) return;
+
     const dId     = dentistSel.value;
     const date    = dateSel.value;
     const time    = timeSel.value;
     const treatId = treatSel ? treatSel.value : '';
+    const pId     = patientSel ? patientSel.value : '';
     const exclId  = excludeIdEl ? excludeIdEl.value : '0';
 
     if (!dId || !date || !time) return;
@@ -165,11 +241,12 @@ function initAppointmentForm() {
     }
 
     const url = contextPath + '/appointments?action=check-availability' +
-      '&dentistId=' + encodeURIComponent(dId) +
-      '&date='      + encodeURIComponent(date) +
-      '&time='      + encodeURIComponent(time) +
+      '&dentistId='  + encodeURIComponent(dId) +
+      '&patientId='  + encodeURIComponent(pId) +
+      '&date='       + encodeURIComponent(date) +
+      '&time='       + encodeURIComponent(time) +
       '&treatmentId='+ encodeURIComponent(treatId) +
-      '&excludeId=' + encodeURIComponent(exclId);
+      '&excludeId='  + encodeURIComponent(exclId);
 
     fetch(url, { headers: { 'Accept': 'application/json' } })
       .then(function (resp) { return resp.json(); })
@@ -177,12 +254,12 @@ function initAppointmentForm() {
         if (availStatus) {
           if (data.available) {
             availStatus.innerHTML =
-              '<span class="text-success"><i class="bi bi-check-circle-fill"></i> ' +
+              '<span class="text-success fw-semibold"><i class="bi bi-check-circle-fill me-1"></i>' +
               data.message + '</span>';
             if (submitBtn) submitBtn.disabled = false;
           } else {
             availStatus.innerHTML =
-              '<span class="text-danger"><i class="bi bi-x-circle-fill"></i> ' +
+              '<span class="text-danger fw-semibold"><i class="bi bi-x-circle-fill me-1"></i>' +
               data.message + '</span>';
             if (submitBtn) submitBtn.disabled = true;
           }
@@ -191,29 +268,32 @@ function initAppointmentForm() {
       .catch(function () {
         if (availStatus) {
           availStatus.innerHTML =
-            '<span class="text-warning"><i class="bi bi-exclamation-triangle"></i> Unable to verify availability.</span>';
+            '<span class="text-warning"><i class="bi bi-exclamation-triangle me-1"></i> Unable to verify availability.</span>';
         }
       });
   }
+
+  // Initial schedule badge if dentist is selected
+  updateDentistSchedule();
 
   [dentistSel, dateSel, timeSel].forEach(function (el) {
     if (!el) return;
     el.addEventListener('change', function () {
       clearTimeout(checkTimeout);
-      checkTimeout = setTimeout(checkAvailability, 400);
+      checkTimeout = setTimeout(checkAvailability, 300);
     });
   });
 
   if (treatSel) {
     treatSel.addEventListener('change', function () {
       clearTimeout(checkTimeout);
-      checkTimeout = setTimeout(checkAvailability, 400);
+      checkTimeout = setTimeout(checkAvailability, 300);
 
-      // Show duration
+      // Show duration & cost
       const option = treatSel.options[treatSel.selectedIndex];
       const dur    = option ? option.getAttribute('data-duration') : '';
       const durEl  = document.getElementById('treatmentDuration');
-      if (durEl && dur) durEl.textContent = dur + ' minutes';
+      if (durEl && dur) durEl.textContent = 'Estimated duration: ' + dur + ' minutes';
     });
   }
 }
