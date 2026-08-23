@@ -170,6 +170,9 @@ public class Bill {
     public String     getPatientPhone()                { return patientPhone; }
     public void       setPatientPhone(String v)        { this.patientPhone = v; }
 
+    public String     getContactNumber()               { return patientPhone; }
+    public void       setContactNumber(String v)       { this.patientPhone = v; }
+
     public String     getPatientAddress()              { return patientAddress; }
     public void       setPatientAddress(String v)      { this.patientAddress = v; }
 

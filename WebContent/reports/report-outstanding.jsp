@@ -64,10 +64,10 @@
                   <tbody>
                     <c:forEach var="b" items="${bills}">
                       <tr>
-                        <td><code>${b.billNumber}</code></td>
+                        <td><a href="${pageContext.request.contextPath}/billing?action=view&id=${b.billId}"><code>${b.billNumber}</code></a></td>
                         <td><fmt:formatDate value="${b.issuedDateSql}" pattern="dd MMM yyyy"/></td>
                         <td>${b.patientName} (${b.patientNumber})</td>
-                        <td>${b.contactNumber}</td>
+                        <td>${not empty b.patientPhone ? b.patientPhone : (not empty b.contactNumber ? b.contactNumber : '-')}</td>
                         <td>LKR <fmt:formatNumber value="${b.grandTotal}" type="number"/></td>
                         <td class="text-success">LKR <fmt:formatNumber value="${b.amountPaid}" type="number"/></td>
                         <td class="text-danger fw-600">LKR <fmt:formatNumber value="${b.balanceDue}" type="number"/></td>

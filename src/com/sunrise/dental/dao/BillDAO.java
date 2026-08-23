@@ -48,6 +48,9 @@ public interface BillDAO {
     /** Count of bills with balance_due > 0. */
     int countOutstandingBills() throws ApplicationException;
 
+    /** Retrieve all bills with an outstanding balance (ISSUED or PARTIALLY_PAID). */
+    List<Bill> findOutstanding(int limit) throws ApplicationException;
+
     /** Monthly revenue data for chart (12 months). */
     List<Map<String, Object>> getMonthlyRevenue(int year) throws ApplicationException;
 
