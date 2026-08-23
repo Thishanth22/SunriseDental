@@ -377,6 +377,25 @@ public class BillDAOImpl implements BillDAO {
     }
 
     @Override
+    public List<Bill> findOutstanding(int limit) throws ApplicationException {
+        final String sql = SELECT_FULL +
+            "WHERE b.balance_due > 0 AND b.bill_status NOT IN ('CANCELLED','REFUNDED') " +
+            "ORDER BY b.due_date ASC, b.created_at DESC LIMIT ?";
+        List<Bill> list = new ArrayList<>();
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, limit > 0 ? limit : 200);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) list.add(mapRow(rs));
+            }
+        } catch (SQLException e) {
+            logger.log(Level.SEVERE, "findOutstanding failed", e);
+            throw new ApplicationException("Unable to retrieve outstanding bills.", e);
+        }
+        return list;
+    }
+
+    @Override
     public List<Map<String, Object>> getMonthlyRevenue(int year) throws ApplicationException {
         final String sql =
             "SELECT MONTH(payment_date) AS month, COALESCE(SUM(amount),0) AS revenue " +

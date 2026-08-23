@@ -61,7 +61,7 @@ public class ReportServlet extends HttpServlet {
                     req.getRequestDispatcher("/reports/report-monthly-revenue.jsp").forward(req, resp);
                 }
                 case "outstanding" -> {
-                    req.setAttribute("bills", billDAO.search(null, "PARTIALLY_PAID", null, null, 0, 200));
+                    req.setAttribute("bills", billDAO.findOutstanding(200));
                     req.getRequestDispatcher("/reports/report-outstanding.jsp").forward(req, resp);
                 }
                 default -> req.getRequestDispatcher("/reports/report-menu.jsp").forward(req, resp);
