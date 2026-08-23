@@ -104,6 +104,13 @@ public class AppointmentService {
         LocalTime endTime = apptTime.plusMinutes(treatment.getDurationMins());
         appointment.setEndTime(endTime);
 
+        if (endTime.isAfter(dentist.getWorkEndTime())) {
+            throw new ApplicationException(
+                "Treatment duration (" + treatment.getDurationMins() +
+                " mins) exceeds the dentist's working hours (shift ends at " +
+                dentist.getWorkEndTime() + "). Please select an earlier appointment time.");
+        }
+
         // ----- Business Rule 5: Double-booking check -----
         boolean conflict = appointmentDAO.hasConflict(
             appointment.getDentistId(),
@@ -173,8 +180,23 @@ public class AppointmentService {
         Treatment treatment = treatmentDAO.findById(appointment.getTreatmentId());
         if (treatment == null) throw new ApplicationException("Treatment not found.");
 
-        LocalTime endTime = appointment.getAppointmentTime().plusMinutes(treatment.getDurationMins());
+        LocalTime apptTime = appointment.getAppointmentTime();
+        if (apptTime.isBefore(dentist.getWorkStartTime()) ||
+            apptTime.isAfter(dentist.getWorkEndTime())) {
+            throw new ApplicationException(
+                "The selected time is outside the dentist's working hours (" +
+                dentist.getWorkStartTime() + " - " + dentist.getWorkEndTime() + ").");
+        }
+
+        LocalTime endTime = apptTime.plusMinutes(treatment.getDurationMins());
         appointment.setEndTime(endTime);
+
+        if (endTime.isAfter(dentist.getWorkEndTime())) {
+            throw new ApplicationException(
+                "Treatment duration (" + treatment.getDurationMins() +
+                " mins) exceeds the dentist's working hours (shift ends at " +
+                dentist.getWorkEndTime() + "). Please select an earlier appointment time.");
+        }
 
         boolean conflict = appointmentDAO.hasConflict(
             appointment.getDentistId(),
@@ -254,19 +276,10 @@ public class AppointmentService {
     private void validateDentistDayAvailability(Dentist dentist, LocalDate date)
             throws ApplicationException {
         DayOfWeek day = date.getDayOfWeek();
-        boolean available = switch (day) {
-            case MONDAY    -> dentist.isAvailableMonday();
-            case TUESDAY   -> dentist.isAvailableTuesday();
-            case WEDNESDAY -> dentist.isAvailableWednesday();
-            case THURSDAY  -> dentist.isAvailableThursday();
-            case FRIDAY    -> dentist.isAvailableFriday();
-            case SATURDAY  -> dentist.isAvailableSaturday();
-            case SUNDAY    -> dentist.isAvailableSunday();
-        };
-        if (!available) {
+        if (!dentist.isAvailableOn(day)) {
             throw new ApplicationException(
                 dentist.getFullName() + " is not available on " + day.toString() +
-                "s. Please select a different date.");
+                "s. Available clinic days: " + dentist.getAvailableDaysSummary() + ". Please select a different date.");
         }
     }
 }

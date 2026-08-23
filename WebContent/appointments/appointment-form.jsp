@@ -131,15 +131,26 @@
                   <div class="col-md-6">
                     <label class="form-label" for="dentistId">Dentist <span class="text-danger">*</span></label>
                     <select id="dentistId" name="dentistId" class="form-select" required>
-                      <option value="">-- Select Dentist --</option>
+                      <option value="" data-start="" data-end="" data-days="" data-mon="false" data-tue="false" data-wed="false" data-thu="false" data-fri="false" data-sat="false" data-sun="false">-- Select Dentist --</option>
                       <c:forEach var="d" items="${dentists}">
                         <option value="${d.dentistId}"
+                                data-start="${d.workStartTime}"
+                                data-end="${d.workEndTime}"
+                                data-days="${d.availableDaysSummary}"
+                                data-mon="${d.availableMonday}"
+                                data-tue="${d.availableTuesday}"
+                                data-wed="${d.availableWednesday}"
+                                data-thu="${d.availableThursday}"
+                                data-fri="${d.availableFriday}"
+                                data-sat="${d.availableSaturday}"
+                                data-sun="${d.availableSunday}"
                                 ${appointment.dentistId == d.dentistId ? 'selected' : ''}>
                           ${d.fullName.startsWith('Dr.') ? d.fullName : 'Dr. '.concat(d.fullName)} — ${d.specialization}
                         </option>
                       </c:forEach>
                     </select>
                     <div class="invalid-feedback">Please select a dentist.</div>
+                    <div id="dentistScheduleBadge" class="mt-1" style="font-size:.78rem;font-weight:500;"></div>
                   </div>
 
                   <div class="col-md-3">
@@ -149,6 +160,7 @@
                            value="${not empty appointment.appointmentDate ? appointment.appointmentDate : ''}"
                            min="${today}" required/>
                     <div class="invalid-feedback">Please select a date.</div>
+                    <div id="dateAvailabilityBadge" class="mt-1" style="font-size:.78rem;"></div>
                   </div>
 
                   <div class="col-md-3">
@@ -156,8 +168,9 @@
                     <input type="time" id="appointmentTime" name="appointmentTime"
                            class="form-control"
                            value="${not empty appointment.appointmentTime ? appointment.appointmentTime : ''}"
-                           min="08:00" max="20:00" step="60" required/>
-                    <div class="invalid-feedback">Please select a valid time (08:00 - 20:00).</div>
+                           step="60" required/>
+                    <div class="invalid-feedback">Please select a valid appointment time.</div>
+                    <div id="timeGuidance" class="mt-1 text-muted" style="font-size:.75rem;"></div>
                   </div>
 
                   <!-- Availability Status (AJAX result) -->

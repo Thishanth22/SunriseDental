@@ -71,8 +71,14 @@ public class AppointmentServlet extends HttpServlet {
                 default -> resp.sendRedirect(req.getContextPath() + "/appointments");
             }
         } catch (ApplicationException e) {
-            logger.log(Level.SEVERE, "AppointmentServlet POST error", e);
+            logger.log(Level.WARNING, "AppointmentServlet POST error: " + e.getMessage());
             req.setAttribute("error", e.getMessage());
+            Appointment appt = buildFromForm(req);
+            if ("update".equalsIgnoreCase(action)) {
+                appt.setAppointmentId(parseInt(req.getParameter("appointmentId"), 0));
+                appt.setAppointmentNumber(req.getParameter("appointmentNumber"));
+            }
+            req.setAttribute("appointment", appt);
             loadFormDropdowns(req);
             req.getRequestDispatcher("/appointments/appointment-form.jsp").forward(req, resp);
         }
@@ -183,39 +189,76 @@ public class AppointmentServlet extends HttpServlet {
     /** AJAX endpoint for double-booking check from the booking form. */
     private void checkAvailability(HttpServletRequest req, HttpServletResponse resp)
             throws ApplicationException, IOException {
-        resp.setContentType("application/json");
+        resp.setContentType("application/json;charset=UTF-8");
         int dentistId  = parseInt(req.getParameter("dentistId"), 0);
+        int patientId  = parseInt(req.getParameter("patientId"), 0);
         String dateS   = req.getParameter("date");
         String timeS   = req.getParameter("time");
         String treatS  = req.getParameter("treatmentId");
         int excludeId  = parseInt(req.getParameter("excludeId"), 0);
 
-        if (dentistId == 0 || dateS == null || timeS == null) {
-            resp.getWriter().write("{\"available\":false,\"message\":\"Missing parameters.\"}");
+        if (dentistId == 0 || dateS == null || dateS.trim().isEmpty() || timeS == null || timeS.trim().isEmpty()) {
+            resp.getWriter().write("{\"available\":false,\"message\":\"Please select a dentist, date, and time.\"}");
             return;
         }
 
         LocalDate date = DateUtil.parseDate(dateS);
         java.time.LocalTime startTime = DateUtil.parseTime(timeS);
         if (date == null || startTime == null) {
-            resp.getWriter().write("{\"available\":false,\"message\":\"Invalid date or time.\"}");
+            resp.getWriter().write("{\"available\":false,\"message\":\"Invalid date or time format.\"}");
             return;
         }
 
-        // Compute end time from treatment duration
+        Dentist dentist = dentistDAO.findById(dentistId);
+        if (dentist == null || !dentist.isActive()) {
+            resp.getWriter().write("{\"available\":false,\"message\":\"The selected dentist is currently unavailable.\"}");
+            return;
+        }
+
+        java.time.DayOfWeek dow = date.getDayOfWeek();
+        if (!dentist.isAvailableOn(dow)) {
+            String days = dentist.getAvailableDaysSummary();
+            resp.getWriter().write("{\"available\":false,\"message\":\"" + dentist.getFullName() + 
+                " is not in clinic on " + dow + "s. Available clinic days: " + days + ".\"}");
+            return;
+        }
+
+        if (startTime.isBefore(dentist.getWorkStartTime()) || startTime.isAfter(dentist.getWorkEndTime())) {
+            resp.getWriter().write("{\"available\":false,\"message\":\"Selected time (" + 
+                DateUtil.formatTime(startTime) + ") is outside working hours (" + 
+                DateUtil.formatTime(dentist.getWorkStartTime()) + " - " + 
+                DateUtil.formatTime(dentist.getWorkEndTime()) + ").\"}");
+            return;
+        }
+
         int durationMins = 30;
-        if (treatS != null && !treatS.isEmpty()) {
+        if (treatS != null && !treatS.trim().isEmpty()) {
             Treatment t = treatDAO.findById(parseInt(treatS, 0));
-            if (t != null) durationMins = t.getDurationMins();
+            if (t != null && t.getDurationMins() > 0) durationMins = t.getDurationMins();
         }
         java.time.LocalTime endTime = startTime.plusMinutes(durationMins);
 
+        if (endTime.isAfter(dentist.getWorkEndTime())) {
+            resp.getWriter().write("{\"available\":false,\"message\":\"Treatment duration (" + 
+                durationMins + " mins) exceeds shift end (" + DateUtil.formatTime(dentist.getWorkEndTime()) + "). Choose an earlier slot.\"}");
+            return;
+        }
+
         boolean conflict = apptDAO.hasConflict(dentistId, date, startTime, endTime, excludeId);
         if (conflict) {
-            resp.getWriter().write("{\"available\":false,\"message\":\"The selected dentist is unavailable at this time. Please select another slot.\"}");
-        } else {
-            resp.getWriter().write("{\"available\":true,\"message\":\"Slot is available.\"}");
+            resp.getWriter().write("{\"available\":false,\"message\":\"" + dentist.getFullName() + 
+                " already has an appointment booked overlapping this slot (" + DateUtil.formatTime(startTime) + " - " + DateUtil.formatTime(endTime) + ").\"}");
+            return;
         }
+
+        if (patientId > 0 && apptDAO.hasPatientConflict(patientId, date, startTime, endTime, excludeId)) {
+            resp.getWriter().write("{\"available\":false,\"message\":\"This patient already has an appointment overlapping this slot.\"}");
+            return;
+        }
+
+        resp.getWriter().write("{\"available\":true,\"message\":\"Slot available: " + 
+            DateUtil.formatTime(startTime) + " - " + DateUtil.formatTime(endTime) + 
+            " (" + durationMins + " mins with " + dentist.getFullName() + ")\"}");
     }
 
     private void loadFormDropdowns(HttpServletRequest req) {

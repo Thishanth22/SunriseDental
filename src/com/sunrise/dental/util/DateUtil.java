@@ -38,8 +38,12 @@ public final class DateUtil {
 
     public static LocalTime parseTime(String s) {
         if (s == null || s.trim().isEmpty()) return null;
+        String trimmed = s.trim();
         try {
-            return LocalTime.parse(s.trim(), TIME_FORM);
+            if (trimmed.length() == 5) {
+                return LocalTime.parse(trimmed, TIME_FORM);
+            }
+            return LocalTime.parse(trimmed);
         } catch (DateTimeParseException e) {
             return null;
         }

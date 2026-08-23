@@ -272,7 +272,7 @@ public class PatientDAOImpl implements PatientDAO {
             ps.setString(13, patient.getBloodGroup());
             ps.setString(14, patient.getAllergies());
             ps.setString(15, patient.getMedicalNotes());
-            ps.setString(16, patient.getStatus());
+            ps.setString(16, patient.getStatus() != null ? patient.getStatus() : "ACTIVE");
             ps.setInt(17, patient.getPatientId());
             ps.executeUpdate();
         } catch (SQLException e) {

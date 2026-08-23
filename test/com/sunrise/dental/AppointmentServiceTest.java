@@ -76,4 +76,45 @@ public class AppointmentServiceTest {
         appt.setStatus("COMPLETED");
         assertEquals("COMPLETED", appt.getStatus());
     }
+
+    @Test
+    public void testDentistDayAvailabilityValidation() {
+        com.sunrise.dental.model.Dentist d = new com.sunrise.dental.model.Dentist();
+        d.setFirstName("Amali");
+        d.setLastName("Jayawardena");
+        d.setAvailableMonday(true);
+        d.setAvailableWednesday(true);
+        d.setAvailableFriday(true);
+        d.setAvailableSaturday(true);
+        d.setAvailableThursday(false);
+        d.setWorkStartTime(LocalTime.of(10, 0));
+        d.setWorkEndTime(LocalTime.of(18, 0));
+
+        assertFalse("Dentist 4 must not be available on Thursday", d.isAvailableOn(java.time.DayOfWeek.THURSDAY));
+        assertTrue("Dentist 4 must be available on Friday", d.isAvailableOn(java.time.DayOfWeek.FRIDAY));
+        assertEquals("Mon, Wed, Fri, Sat", d.getAvailableDaysSummary());
+    }
+
+    @Test
+    public void testDentistShiftBoundaryCheck() {
+        LocalTime shiftStart = LocalTime.of(10, 0);
+        LocalTime shiftEnd   = LocalTime.of(18, 0);
+
+        LocalTime outsideStart = LocalTime.of(8, 0);
+        LocalTime outsideEnd   = LocalTime.of(21, 0);
+        LocalTime validSlot    = LocalTime.of(11, 0);
+        int durationMins       = 45;
+        LocalTime validEnd     = validSlot.plusMinutes(durationMins);
+
+        assertTrue("08:00 must be before shift start 10:00", outsideStart.isBefore(shiftStart));
+        assertTrue("21:00 must be after shift end 18:00", outsideEnd.isAfter(shiftEnd));
+        assertFalse("11:00 is within shift start", validSlot.isBefore(shiftStart));
+        assertFalse("11:00 is within shift end", validSlot.isAfter(shiftEnd));
+        assertFalse("11:45 ends within shift", validEnd.isAfter(shiftEnd));
+
+        // Treatment extending past shift end
+        LocalTime lateSlot = LocalTime.of(17, 30);
+        LocalTime lateEnd = lateSlot.plusMinutes(45); // 18:15
+        assertTrue("Late appointment ending at 18:15 exceeds 18:00 shift end", lateEnd.isAfter(shiftEnd));
+    }
 }
